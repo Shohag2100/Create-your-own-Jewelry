@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room - {{ chat_room.user.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .chat-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-badge.online {
+            background-color: #2ecc71;
+        }
+
+        .status-badge.offline {
+            background-color: #e74c3c;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user-message {
+            justify-content: flex-end;
+        }
+
+        .message.admin-message {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            word-wrap: break-word;
+        }
+
+        .message.user-message .message-content {
+            background-color: #667eea;
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.admin-message .message-content {
+            background-color: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .message-file {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .message-image {
+            max-width: 300px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .input-area {
+            background: white;
+            padding: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #667eea;
+            margin: 0 3px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .input-group-text {
+            background: white;
+            border: 1px solid #e9ecef;
+        }
+
+        .btn-send {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .btn-send:hover {
+            background-color: #764ba2;
+            border-color: #764ba2;
+        }
+
+        .file-preview {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-preview-close {
+            cursor: pointer;
+            color: #e74c3c;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .nav-link-back {
+            color: white !important;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'chat:chat-list' %}" class="btn btn-link nav-link-back">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                    <div style="margin-left: 10px;">
+                        <h5>
+                            <span class="status-badge online" id="status-badge"></span>
+                            {{ chat_room.user.username }}
+                        </h5>
+                        <small id="user-status">Online</small>
+                    </div>
+                </div>
+                <div id="connection-indicator">
+                    <span class="badge bg-success">Connected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="messages-container" id="messages-container">
+            <div class="text-center text-muted mt-5">
+                <p>Loading messages...</p>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typing-indicator" style="display: none; padding: 0 20px;">
+            <span>{{ chat_room.user.username }} is typing</span>
+            <div class="typing-dot" style="margin-left: 5px;"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div id="file-preview"></div>
+            
+            <div class="input-group">
+                <input type="file" class="form-control d-none" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv">
+                <input type="file" class="form-control d-none" id="image-input" accept="image/*">
+                
+                <button class="btn btn-outline-secondary" type="button" id="attach-file-btn" title="Attach File">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="attach-image-btn" title="Attach Image">
+                    <i class="fas fa-image"></i>
+                </button>
+                
+                <input type="text" class="form-control" id="message-input" placeholder="Type your message..." autocomplete="off">
+                
+                <button class="btn btn-send" type="button" id="send-btn">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status connected">
+        ● Connected
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const ROOM_ID = {{ chat_room.id }};
+        const USER_ID = {{ user.id }};
+        const USER_USERNAME = '{{ user.username }}';
+        const API_BASE = '/chat/api';
+        
+        let ws = null;
+        let messageMap = new Map();
+        let typingTimeout = null;
+
+        class ChatWebSocket {
+            constructor(roomId) {
+                this.roomId = roomId;
+                this.connected = false;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.reconnectDelay = 3000;
+                this.connect();
+            }
+
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const url = `${protocol}//${window.location.host}/ws/chat/${this.roomId}/`;
+                
+                this.ws = new WebSocket(url);
+                
+                this.ws.onopen = () => this.onOpen();
+                this.ws.onmessage = (e) => this.onMessage(e);
+                this.ws.onclose = () => this.onClose();
+                this.ws.onerror = (e) => this.onError(e);
+            }
+
+            onOpen() {
+                console.log('WebSocket connected');
+                this.connected = true;
+                this.reconnectAttempts = 0;
+                updateConnectionStatus(true);
+            }
+
+            onMessage(event) {
+                const data = JSON.parse(event.data);
+                
+                switch(data.type) {
+                    case 'chat_message':
+                    case 'file_message':
+                    case 'image_message':
+                        addMessage(data.message);
+                        break;
+                    case 'user_status':
+                        updateUserStatus(data.status);
+                        break;
+                    case 'typing_indicator':
+                        updateTypingIndicator(data.username, data.is_typing);
+                        break;
+                    case 'error':
+                        console.error('WebSocket error:', data.message);
+                        break;
+                }
+            }
+
+            onClose() {
+                console.log('WebSocket disconnected');
+                this.connected = false;
+                updateConnectionStatus(false);
+                
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => this.connect(), this.reconnectDelay);
+                }
+            }
+
+            onError(error) {
+                console.error('WebSocket error:', error);
+            }
+
+            send(data) {
+                if (this.connected && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(data));
+                }
+            }
+
+            close() {
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }
+
+        // Initialize WebSocket
+        ws = new ChatWebSocket(ROOM_ID);
+
+        // Load initial messages
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMessages();
+        });
+
+        // Event Listeners
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('message-input').addEventListener('input', function() {
+            clearTimeout(typingTimeout);
+            
+            if (ws.connected) {
+                ws.send({
+                    type: 'typing',
+                    is_typing: true
+                });
+                
+                typingTimeout = setTimeout(() => {
+                    ws.send({
+                        type: 'typing',
+                        is_typing: false
+                    });
+                }, 1000);
+            }
+        });
+
+        document.getElementById('attach-file-btn').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('attach-image-btn').addEventListener('click', function() {
+            document.getElementById('image-input').click();
+        });
+
+        document.getElementById('file-input').addEventListener('change', handleFileSelect);
+        document.getElementById('image-input').addEventListener('change', handleImageSelect);
+
+        // Functions
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (ws.connected) {
+                ws.send({
+                    type: 'chat_message',
+                    message: message
+                });
+                
+                input.value = '';
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (ws.connected) {
+                        ws.send({
+                            type: 'file_upload',
+                            file: event.target.result,
+                            filename: file.name
+                        });
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
+        }
+
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (ws.connected) {
+                        ws.send({
+                            type: 'image_upload',
+                            image: event.target.result,
+                            filename: file.name
+                        });
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
+        }
+
+        function addMessage(message) {
+            messageMap.set(message.id, message);
+            renderMessages();
+            scrollToBottom();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            const sortedMessages = Array.from(messageMap.values()).sort((a, b) => 
+                new Date(a.created_at) - new Date(b.created_at)
+            );
+
+            container.innerHTML = sortedMessages.map(msg => createMessageElement(msg)).join('');
+        }
+
+        function createMessageElement(message) {
+            const isCurrentUser = message.sender_id === USER_ID;
+            const messageClass = isCurrentUser ? 'user-message' : 'admin-message';
+            const timestamp = new Date(message.created_at).toLocaleTimeString();
+
+            let content = '';
+            if (message.message_type === 'text') {
+                content = `<div class="message-content">${escapeHtml(message.content)}</div>`;
+            } else if (message.message_type === 'file') {
+                content = `
+                    <div class="message-file">
+                        <a href="${message.file_url}" target="_blank" download>
+                            <i class="fas fa-file"></i> ${escapeHtml(message.content)}
+                        </a>
+                    </div>
+                `;
+            } else if (message.message_type === 'image') {
+                content = `
+                    <div class="message-content">
+                        <img src="${message.image_url}" alt="image" class="message-image">
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="message ${messageClass}">
+                    <div>
+                        ${content}
+                        <div class="message-timestamp">${timestamp}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadMessages() {
+            try {
+                const response = await fetch(`${API_BASE}/messages/?chat_room_id=${ROOM_ID}&page_size=50`, {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    data.messages.forEach(msg => messageMap.set(msg.id, msg));
+                    renderMessages();
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('connection-indicator');
+            const statusDiv = document.getElementById('connection-status');
+            
+            if (connected) {
+                indicator.innerHTML = '<span class="badge bg-success">Connected</span>';
+                statusDiv.className = 'connection-status connected';
+                statusDiv.textContent = '● Connected';
+            } else {
+                indicator.innerHTML = '<span class="badge bg-danger">Disconnected</span>';
+                statusDiv.className = 'connection-status disconnected';
+                statusDiv.textContent = '● Disconnected';
+            }
+        }
+
+        function updateUserStatus(status) {
+            const statusBadge = document.getElementById('status-badge');
+            const statusText = document.getElementById('user-status');
+            
+            if (status === 'online') {
+                statusBadge.className = 'status-badge online';
+                statusText.textContent = 'Online';
+            } else {
+                statusBadge.className = 'status-badge offline';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        function updateTypingIndicator(username, isTyping) {
+            if (username === USER_USERNAME) return; // Don't show for self
+            
+            const indicator = document.getElementById('typing-indicator');
+            if (isTyping) {
+                indicator.style.display = 'flex';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function getAuthToken() {
+            return localStorage.getItem('auth_token') || 
+                   document.querySelector('meta[name="csrf-token"]')?.content || '';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>

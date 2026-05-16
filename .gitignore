@@ -1,0 +1,42 @@
+# Environment variables
+.env
+.env.example
+
+# Documentation (local only)
+CHAT_SETUP.md
+ENV_SETUP_GUIDE.md
+ENV_QUICK_REFERENCE.md
+IMPLEMENTATION_SUMMARY.md
+QUICK_START.md
+README_CHAT.md
+DEPLOYMENT_CHECKLIST.md
+
+# Testing utilities (local only)
+test_websocket.py
+verify_env.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

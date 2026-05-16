@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome | Payment Project</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+  <section class="hero">
+    <span class="tag">Welcome to your payment hub</span>
+    <h1>Fast, secure payments with Stripe checkout.</h1>
+    <p>Experience a clean payment flow and see how easy it is to start a checkout session in your app. Click below to begin a test payment in seconds.</p>
+    <div class="actions">
+      <a class="button button-primary" href="/payment/">Start Payment</a>
+      <a class="button button-secondary" href="/payment/success/">View Success</a>
+    </div>
+    <div class="footer">Built for demo payments with Stripe test mode.</div>
+  </section>
+</body>
+</html>

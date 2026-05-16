@@ -1,0 +1,16 @@
+# Mark virtualenv, build artifacts and common generated files as vendored/generated
+env/** linguist-vendored
+env/** linguist-generated
+staticfiles/** linguist-vendored
+static/** linguist-vendored
+media/** linguist-vendored
+node_modules/** linguist-vendored
+dist/** linguist-vendored
+*.min.js linguist-generated
+*.map linguist-generated
+
+# Hide compiled/packed assets from language stats
+*.min.css linguist-generated
+*.bundle.js linguist-generated
+*.gz linguist-generated
+*.zip linguist-generated
